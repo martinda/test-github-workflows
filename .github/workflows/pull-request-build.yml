@@ -11,12 +11,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Learn
+      run: cat $GITHUB_EVENT_PATH
     - name: Checkout PR HEAD
       uses: actions/checkout@v2
       with:
           ref: ${{ github.event.pull_request.head.sha }}
-    - name: Merge to the destination branch
-      run: echo git checkout ${{ github.event.pull_request.base.ref }}
+    - name: Checkout destination branch
+      run: echo git checkout $GITHUB_BASE_REF
+    - name: Merge to destination branch
       run: echo git merge --no-ff -m "Merge PR $ {{ github.event.pull_request.number }}"
 
       #   - name: Set up JDK 11
