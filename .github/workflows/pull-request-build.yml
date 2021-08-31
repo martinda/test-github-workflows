@@ -66,13 +66,13 @@ jobs:
         - name: Git log
           run: |
               git log --format=format:"%C(auto)%h %C(cyan)%ar%C(auto) %d %C(green)%aN%Creset %s" --graph --all
-              #      - name: Merge PR into destination branch
-              #        run: |
-              #            git config --local user.email "action@github.com"
-              #            git config --local user.name "GitHub Action"
-              #            git merge --no-ff -m "Merge PR ${{ github.event.issue.number }} to $GITHUB_BASE_REF" pr/${{ github.event.issue.number }}
-              #      - name: Show summary
-              #        run: git show --summary
+        - name: Merge PR into destination branch
+          run: |
+              git config --local user.email "action@github.com"
+              git config --local user.name "GitHub Action"
+              git merge --no-ff -m "Merge PR ${{ github.event.issue.number }} to ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}" pr/${{ github.event.issue.number }}
+        - name: Show summary
+          run: git show --summary
 
       #   - name: Set up JDK 11
       #     uses: actions/setup-java@v2
