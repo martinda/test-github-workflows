@@ -51,14 +51,14 @@ jobs:
           run: |
               echo "PR3: $PR3"
               echo "PR4: $PR4"
-        - name: Checkout PR HEAD
+        - name: Checkout the main branch
           uses: actions/checkout@v2
           with:
               fetch-depth: 0
         - name: Fetch the pull-request
           run: git fetch origin +refs/pull/${{ github.event.issue.number }}/head:refs/remotes/origin/pr/${{ github.event.issue.number }}
-        - name: Create a local pr branch
-          run: git branch pr/${{ github.event.issue.number }}
+        - name: Switch to the PR branch
+          run: git switch pr/${{ github.event.issue.number }}
         - name: Fetch the destination branch
           run: git fetch origin ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}
         - name: Switch to destination branch
