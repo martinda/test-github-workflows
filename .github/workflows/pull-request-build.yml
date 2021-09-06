@@ -53,7 +53,8 @@ jobs:
         #      echo "PR4: $PR4"
         - name: Checkout the merge commit
           uses: actions/checkout@v2
-          ref: ${{ fromJSON(steps.pr-context.outputs.result).data.merge_commit_sha }}
+          with:
+              ref: ${{ fromJSON(steps.pr-context.outputs.result).data.merge_commit_sha }}
 
 #        - name: Fetch the pull-request
 #          run: git fetch origin +refs/pull/${{ github.event.issue.number }}/head:refs/remotes/origin/pr/${{ github.event.issue.number }}
