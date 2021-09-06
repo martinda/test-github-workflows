@@ -97,6 +97,6 @@ jobs:
               --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
               --header 'Accept: application/vnd.github.v3+json' \
               --data '{"state": "${{ job.status }}"}' \
-              --url 'https://api.github.com/repos/${{ github.repository }}/statuses/${{ fromJSON(steps.pr-context.outputs.result).data.head.sha }}'
+              --url 'https://api.github.com/repos/${{ github.repository }}/statuses/${{ fromJSON(steps.pr-context.outputs.result).data.head.sha }}' \
               --fail
 
