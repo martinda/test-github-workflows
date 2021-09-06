@@ -51,26 +51,26 @@ jobs:
         #  run: |
         #      echo "PR3: $PR3"
         #      echo "PR4: $PR4"
-        - name: Checkout the main branch
+        - name: Checkout the merge commit
           uses: actions/checkout@v2
-          with:
-              fetch-depth: 0
-        - name: Fetch the pull-request
-          run: git fetch origin +refs/pull/${{ github.event.issue.number }}/head:refs/remotes/origin/pr/${{ github.event.issue.number }}
-        - name: Switch to the PR branch
-          run: git switch pr/${{ github.event.issue.number }}
-        - name: Fetch the destination branch
-          run: git fetch origin ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}
-        - name: Switch to destination branch
-          run: git switch ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}
+          ref: ${{ fromJSON(steps.pr-context.outputs.result).data.merge_commit_sha }}
+
+#        - name: Fetch the pull-request
+#          run: git fetch origin +refs/pull/${{ github.event.issue.number }}/head:refs/remotes/origin/pr/${{ github.event.issue.number }}
+#        - name: Switch to the PR branch
+#          run: git switch pr/${{ github.event.issue.number }}
+#        - name: Fetch the destination branch
+#          run: git fetch origin ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}
+#        - name: Switch to destination branch
+#          run: git switch ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}
         - name: Git log
           run: |
               git log --format=format:"%C(auto)%h %C(cyan)%ar%C(auto) %d %C(green)%aN%Creset %s" --graph --all
-        - name: Merge PR into destination branch
-          run: |
-              git config --local user.email "action@github.com"
-              git config --local user.name "GitHub Action"
-              git merge --no-ff -m "Merge PR ${{ github.event.issue.number }} to ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}" pr/${{ github.event.issue.number }}
+#        - name: Merge PR into destination branch
+#          run: |
+#              git config --local user.email "action@github.com"
+#              git config --local user.name "GitHub Action"
+#              git merge --no-ff -m "Merge PR ${{ github.event.issue.number }} to ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}" pr/${{ github.event.issue.number }}
         - name: Show summary
           run: git show --summary
 
@@ -90,6 +90,7 @@ jobs:
           with:
               report_paths: '**/build/test-results/test/TEST-*.xml'
 
+        # This does not update the PR status... wrong SHA1?
         - name: Update status
           run: |
               curl -X POST \
@@ -97,6 +98,6 @@ jobs:
               --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
               --header 'Accept: application/vnd.github.v3+json' \
               --data '{"state": "${{ job.status }}"}' \
-              --url 'https://api.github.com/repos/${{ github.repository }}/statuses/${{ fromJSON(steps.pr-context.outputs.result).data.head.sha }}' \
+              --url 'https://api.github.com/repos/${{ github.repository }}/statuses/${{ fromJSON(steps.pr-context.outputs.result).data.merge_commit_sha }}' \
               --fail
 
