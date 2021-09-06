@@ -91,14 +91,19 @@ jobs:
           with:
               report_paths: '**/build/test-results/test/TEST-*.xml'
 
-        # This does not update the PR status... wrong SHA1?
-        - name: Update status
+        # This does not update the PR status... wrong SHA1? - Try check-runs
+        - name: Update success status
+          if: ${{ success() }}
           run: |
               curl -X POST \
               -v \
               --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
               --header 'Accept: application/vnd.github.v3+json' \
-              --data '{"state": "${{ job.status }}"}' \
-              --url 'https://api.github.com/repos/${{ github.repository }}/statuses/${{ fromJSON(steps.pr-context.outputs.result).data.merge_commit_sha }}' \
+              --data '{
+                  "name": "build-pull-request",
+                  "head_sha": ${{ fromJSON(steps.pr-context.outputs.outputs.result).data.merge_commit_sha }},
+                  "status": "completed",
+                  "conclusion": "success"
+              }' \
+              --url 'https://api.github.com/repos/${{ github.repository }}/check-runs' \
               --fail
-
