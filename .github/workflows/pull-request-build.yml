@@ -16,18 +16,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-        - name: github.event.issue.pull_request
-          env:
-              PR: ${{ toJSON(github.event.issue.pull_request) }}
-          run: echo "-- $PR --"
-        - name: github.event.comment.body
-          env:
-              COMMENT: ${{ toJSON(github.event.comment.body) }}
-          run: echo "-- $COMMENT --"
-        - name: GITHUB_EVENT_PATH
-          run: cat $GITHUB_EVENT_PATH
-        - name: curl pull request url 
-          run: curl -s -X GET ${{ github.event.issue.pull_request.url }}
+        #- name: github.event.issue.pull_request
+        #  env:
+        #      PR: ${{ toJSON(github.event.issue.pull_request) }}
+        #  run: echo "-- $PR --"
+        #- name: github.event.comment.body
+        #  env:
+        #      COMMENT: ${{ toJSON(github.event.comment.body) }}
+        #  run: echo "-- $COMMENT --"
+        #- name: GITHUB_EVENT_PATH
+        #  run: cat $GITHUB_EVENT_PATH
+        #- name: curl pull request url 
+        #  run: curl -s -X GET ${{ github.event.issue.pull_request.url }}
         - name: Get PR context
           id: pr-context
           uses: actions/github-script@v4.1.0
@@ -41,16 +41,16 @@ jobs:
                   });
                   console.log(response)
                   return response
-        - name: Examine pr-context
-          env:
-              PR1: ${{ toJSON(steps.pr-context.outputs) }}
-              PR2: ${{ toJSON(steps.pr-context.outputs.result) }}
-              PR3: ${{ fromJSON(steps.pr-context.outputs.result).status }}
-              PR4: ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}
-              PR5: ${{ toJSON(fromJSON(steps.pr-context.outputs.result).data) }}
-          run: |
-              echo "PR3: $PR3"
-              echo "PR4: $PR4"
+        #- name: Examine pr-context
+        #  env:
+        #      PR1: ${{ toJSON(steps.pr-context.outputs) }}
+        #      PR2: ${{ toJSON(steps.pr-context.outputs.result) }}
+        #      PR3: ${{ fromJSON(steps.pr-context.outputs.result).status }}
+        #      PR4: ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}
+        #      PR5: ${{ toJSON(fromJSON(steps.pr-context.outputs.result).data) }}
+        #  run: |
+        #      echo "PR3: $PR3"
+        #      echo "PR4: $PR4"
         - name: Checkout the main branch
           uses: actions/checkout@v2
           with:
@@ -74,12 +74,27 @@ jobs:
         - name: Show summary
           run: git show --summary
 
-      #   - name: Set up JDK 11
-      #     uses: actions/setup-java@v2
-      #     with:
-      #       java-version: '11'
-      #       distribution: 'adopt'
-      #   - name: Grant execute permission for gradlew
-      #     run: chmod +x gradlew
-      #   - name: Build with Gradle
-      #     run: ./gradlew test
+        - name: Set up JDK 11
+          uses: actions/setup-java@v2
+          with:
+            java-version: '11'
+            distribution: 'adopt'
+        - name: Grant execute permission for gradlew
+          run: chmod +x gradlew
+        - name: Build with Gradle
+          run: ./gradlew test
+        - name: Publish Test Report
+          uses: mikepenz/action-junit-report@v2
+          if: always() # always run even if the previous step fails
+          with:
+              report_paths: '**/build/test-results/test/TEST-*.xml'
+
+        - name: Update status
+          run: |
+              curl -X POST \
+              --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+              --header 'Accept: application/vnd.github.v3+json' \
+              --data '{"state": "{{ job.status }}"}' \
+              --url 'https://api.github.com/repos/${{ github.repository }}/statuses/${{ fromJSON(steps.pr-context.outputs.result).data.head.sha }}' \
+              --fail
+
