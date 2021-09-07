@@ -94,4 +94,5 @@ jobs:
         # This does not update the PR status... wrong SHA1? - Try check-runs
         - name: Update success status
           if: ${{ success() }}
-          run: echo curl -X POST -v --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' --header 'content-type: application/json' --data '{ "name": "build-pull-request", "head_sha": "${{ fromJSON(steps.pr-context.outputs.outputs.result).data.merge_commit_sha }}", "status": "completed", "conclusion": "success" }' --url 'https://api.github.com/repos/${{ github.repository }}/check-runs' --fail
+          run: echo curl -X POST -v --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}'
+          #run: echo curl -X POST -v --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' --header 'content-type: application/json' --data '{ "name": "build-pull-request", "head_sha": "${{ fromJSON(steps.pr-context.outputs.outputs.result).data.merge_commit_sha }}", "status": "completed", "conclusion": "success" }' --url 'https://api.github.com/repos/${{ github.repository }}/check-runs' --fail
