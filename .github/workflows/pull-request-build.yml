@@ -95,9 +95,5 @@ jobs:
         - name: Update success status
           if: ${{ success() }}
           run: |
-              echo -- "test 123"
-              echo -- "authorization: ${{ secrets.GITHUB_TOKEN }}"
-              echo -- curl -X POST -v --header "authorization: ${{ secrets.GITHUB_TOKEN }}"
-              curl -X POST -v --header "authorization: ${{ secrets.GITHUB_TOKEN }}"
               curl -X POST -v --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' --header 'content-type: application/json' --data '{ "name": "build-pull-request", "head_sha": "${{ fromJSON(steps.pr-context.outputs.outputs.result).data.merge_commit_sha }}", "status": "completed", "conclusion": "success" }' --url 'https://api.github.com/repos/${{ github.repository }}/check-runs' --fail
           #run: echo curl -X POST -v --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' --header 'content-type: application/json' --data '{ "name": "build-pull-request", "head_sha": "${{ fromJSON(steps.pr-context.outputs.outputs.result).data.merge_commit_sha }}", "status": "completed", "conclusion": "success" }' --url 'https://api.github.com/repos/${{ github.repository }}/check-runs' --fail
