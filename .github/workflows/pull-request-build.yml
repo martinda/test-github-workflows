@@ -16,22 +16,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-        #- name: github.event.issue.pull_request
+        # Some steps for learning and for debug
+        #- name: github.event.issue.pull_request (debug)
         #  env:
         #      PR: ${{ toJSON(github.event.issue.pull_request) }}
         #  run: echo "-- $PR --"
-        #- name: github.event.comment.body
+        #- name: github.event.comment.body (debug)
         #  env:
         #      COMMENT: ${{ toJSON(github.event.comment.body) }}
         #  run: echo "-- $COMMENT --"
-        #- name: GITHUB_EVENT_PATH
+        #- name: GITHUB_EVENT_PATH (debug)
         #  run: cat $GITHUB_EVENT_PATH
-        #- name: curl pull request url 
+        #- name: curl pull request url (debug)
         #  run: curl -s -X GET ${{ github.event.issue.pull_request.url }}
+
         - name: Get PR context
           id: pr-context
           uses: actions/github-script@v4.1.0
           with:
+              # the return value is always a string, even when set to "json"
               result-encoding: json
               script: |
                   const response = await github.pulls.get({
@@ -41,6 +44,8 @@ jobs:
                   });
                   console.log(response)
                   return response
+
+        # Examples of the different ways to use the pr-context json string
         #- name: Examine pr-context
         #  env:
         #      PR1: ${{ toJSON(steps.pr-context.outputs) }}
@@ -54,65 +59,56 @@ jobs:
         - name: Checkout the merge commit
           uses: actions/checkout@v2
           with:
+              # Use either fetch-depth: 0 and manually merge, or reference the merge_commit_sha
               ref: ${{ fromJSON(steps.pr-context.outputs.result).data.merge_commit_sha }}
 
-#        - name: Fetch the pull-request
-#          run: git fetch origin +refs/pull/${{ github.event.issue.number }}/head:refs/remotes/origin/pr/${{ github.event.issue.number }}
-#        - name: Switch to the PR branch
-#          run: git switch pr/${{ github.event.issue.number }}
-#        - name: Fetch the destination branch
-#          run: git fetch origin ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}
-#        - name: Switch to destination branch
-#          run: git switch ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}
+        # Manually merge the PR - don't use if referencing a checkout commit above because it will be shallow
+        #- name: Fetch the pull-request
+        #  run: git fetch origin +refs/pull/${{ github.event.issue.number }}/head:refs/remotes/origin/pr/${{ github.event.issue.number }}
+        #- name: Switch to the PR branch
+        #  run: git switch pr/${{ github.event.issue.number }}
+        #- name: Fetch the destination branch
+        #  run: git fetch origin ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}
+        #- name: Switch to destination branch
+        #  run: git switch ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}
+
+        # Examining the git log before manually merging (for debug)
         - name: Git log
           run: |
-              git log --format=format:"%C(auto)%h %C(cyan)%ar%C(auto) %d %C(green)%aN%Creset %s" --graph --all
-#        - name: Merge PR into destination branch
-#          run: |
-#              git config --local user.email "action@github.com"
-#              git config --local user.name "GitHub Action"
-#              git merge --no-ff -m "Merge PR ${{ github.event.issue.number }} to ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}" pr/${{ github.event.issue.number }}
+              git log --format=format:"%C(auto)%h %C(cyan)%ar%C(auto) %d %C(green)%aN%Creset %s" --graph --all -n 15
+
+        # Manually merge the PR
+        #- name: Merge PR into destination branch
+        #  run: |
+        #      git config --local user.email "action@github.com"
+        #      git config --local user.name "GitHub Action"
+        #      git merge --no-ff -m "Merge PR ${{ github.event.issue.number }} to ${{ fromJSON(steps.pr-context.outputs.result).data.base.ref }}" pr/${{ github.event.issue.number }}
+
+        # Examine the merge commit (debug)
         - name: Show summary
           run: git show --summary
 
+        # Now to the point of the build
         - name: Set up JDK 11
           uses: actions/setup-java@v2
           with:
             java-version: '11'
             distribution: 'adopt'
             cache: 'gradle'
+
         - name: Grant execute permission for gradlew
-          run: chmod +x gradlew
-        - name: Build with Gradle
-          run: ./gradlew test --console=plain --no-daemon
+          run: |
+              chmod +x gradlew
+              ./gradlew test --console=plain --no-daemon
+
         - name: Publish Test Report
           uses: mikepenz/action-junit-report@v2
           if: always() # always run even if the previous step fails
           with:
               report_paths: '**/build/test-results/test/TEST-*.xml'
 
-        # This does not update the PR status... wrong SHA1? - Try check-runs
+        # Update the PR status check by posting to the PR head sha
         - name: Update status
-#          if: ${{ success() }}
-#          run: |
-#              curl \
-#              -X POST \
-#              -H 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
-#              -H "Accept: application/vnd.github.v3+json" \
-#              https://api.github.com/repos/${{ github.repository }}/check-runs \
-#              -d '{"name":"build-pull-request","head_sha":"${{ fromJSON(steps.pr-context.outputs.result).data.merge_commit_sha }}"'
-#          run: |
-#              curl -X POST -v \
-#              --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
-#              --header "Accept: application/vnd.github.v3+json" \
-#              --data '{
-#                  "name": "build-pull-request",
-#                  "head_sha": "${{ fromJSON(steps.pr-context.outputs.result).data.merge_commit_sha }}",
-#                  "status": "completed",
-#                  "conclusion": "success"
-#              }' \
-#              --url 'https://api.github.com/repos/${{ github.repository }}/check-runs' \
-#              --fail
           run: |
               curl -X POST -v \
               --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
@@ -123,6 +119,6 @@ jobs:
                   "description": "build-pull-request success",
                   "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
               }' \
-              --url 'https://api.github.com/repos/${{ github.repository }}/statuses/${{ fromJSON(steps.pr-context.outputs.result).data.head.sha}}' \
+              --url 'https://api.github.com/repos/${{ github.repository }}/statuses/${{ fromJSON(steps.pr-context.outputs.result).data.head.sha }}' \
               --fail
 
