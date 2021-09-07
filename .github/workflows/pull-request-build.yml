@@ -119,22 +119,16 @@ jobs:
             cache: 'gradle'
 
         - name: Grant execute permission for gradlew
+          # Using --scan publishes the test results to the gradle server
           run: |
               chmod +x gradlew
-              ./gradlew test --console=plain --no-daemon
-
-        - name: Publish Test Report
-          uses: mikepenz/action-junit-report@v2
-          if: always() # always run even if the previous step fails
-          with:
-              report_paths: '**/build/test-results/test/TEST-*.xml'
+              ./gradlew test --console=plain --no-daemon --scan
 
         - name: Compute status string
           if: ${{ success() || failure() }}
           id: get-build-status
           # When cancelled, the PR status remains pending
           run: echo "::set-output name=statusString::${{ job.status }}"
-
 
         - name: Update status
           # When cancelled, the PR status remains pending
