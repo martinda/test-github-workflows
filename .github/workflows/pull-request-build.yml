@@ -130,14 +130,10 @@ jobs:
               report_paths: '**/build/test-results/test/TEST-*.xml'
 
         - name: Compute status string
+          if: ${{ success() || failure() }}
           id: get-build-status
           # When cancelled, the PR status remains pending
-          if: ${{ success() || failure() }}
-          outputs:
-              statusString:
-                  description: 'The status string value of the build for the REST API'
-                  value: ${{ job.status }}
-          run: echo "Status string: ${{ job.status }}"
+          run: echo "::set-output name=statusString::${{ job.status }}"
 
 
         - name: Update status
