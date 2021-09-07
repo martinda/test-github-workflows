@@ -137,6 +137,8 @@ jobs:
               statusString:
                   description: 'The status string value of the build for the REST API'
                   value: ${{ job.status }}
+          run: echo "Status string: ${{ job.status }}"
+
 
         - name: Update status
           # When cancelled, the PR status remains pending
