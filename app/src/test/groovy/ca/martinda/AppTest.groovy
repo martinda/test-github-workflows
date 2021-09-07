@@ -14,6 +14,16 @@ class AppTest extends Specification {
         def result = app.greeting
 
         then:
-        result != null
+        result == "Hello World!"
+    }
+    def "A failing test"() {
+        setup:
+        def app = new App()
+
+        when:
+        def result = app.greeting
+
+        then:
+        result == "Broken"
     }
 }
