@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
         # Some steps for learning and for debug
         #- name: github.event.issue.pull_request (debug)
         #  env:
@@ -44,6 +45,27 @@ jobs:
                   });
                   console.log(response)
                   return response
+
+        # Update the PR status check by posting to the PR head sha
+        # job.status can be success, failure or cancelled
+        # See: https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#job-context
+        # Status functions are always(), success(), failure(), cancelled()
+        # See: https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#job-status-check-functions
+        # The POSTed state can be error, failure, pending or success
+        # See https://docs.github.com/en/rest/reference/repos#create-a-commit-status
+        - name: Update status to pending
+          run: |
+              curl -X POST -v \
+              --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
+              --header "Accept: application/vnd.github.v3+json" \
+              --data '{
+                  "context": "build-pull-request",
+                  "state": "pending",
+                  "description": "build-pull-request pending",
+                  "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              }' \
+              --url 'https://api.github.com/repos/${{ github.repository }}/statuses/${{ fromJSON(steps.pr-context.outputs.result).data.head.sha }}' \
+              --fail
 
         # Examples of the different ways to use the pr-context json string
         #- name: Examine pr-context
@@ -107,18 +129,27 @@ jobs:
           with:
               report_paths: '**/build/test-results/test/TEST-*.xml'
 
-        # Update the PR status check by posting to the PR head sha
+        - name: Compute status string
+          id: get-build-status
+          # When cancelled, the PR status remains pending
+          if: ${{ success() || failure() }}
+          outputs:
+              statusString:
+                  description: 'The status string value of the build for the REST API'
+                  value: ${{ job.status }}
+
         - name: Update status
+          # When cancelled, the PR status remains pending
+          if: ${{ success() || failure() }}
           run: |
               curl -X POST -v \
               --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
               --header "Accept: application/vnd.github.v3+json" \
               --data '{
                   "context": "build-pull-request",
-                  "state": "success",
-                  "description": "build-pull-request success",
+                  "state": "${{ steps.get-build-status.outputs.statusString }}",
+                  "description": "build-pull-request ${{ steps.get-build-status.outputs.statusString }}",
                   "target_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
               }' \
               --url 'https://api.github.com/repos/${{ github.repository }}/statuses/${{ fromJSON(steps.pr-context.outputs.result).data.head.sha }}' \
               --fail
-
